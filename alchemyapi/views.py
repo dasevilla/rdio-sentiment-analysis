@@ -140,7 +140,8 @@ def home(request, album_key):
             'per_item_sentiment': per_item_sentiment,
         }
 
+        response = json.dumps(response, indent=2)
         cache.set(album_key, response)
 
-    return http.HttpResponse(json.dumps(response, indent=2),
+    return http.HttpResponse(response,
                              content_type='application/json')
