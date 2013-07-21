@@ -24,6 +24,15 @@ class AlchemyApiAuth(AuthBase):
 
         return r
 
+def extract_comments(reviews, comment_by_key, comments):
+    for comment_obj in comments:
+        comment_key = comment_obj['key']
+        commented_on_key = comment_obj['commentedItem']['key']
+        comment_text = comment_obj['comment']
+
+        reviews[commented_on_key].append(comment_key)
+        comment_by_key[comment_key] = comment_text
+
 
 def get_rdio_comments(album_key):
     oauth2_token = {
@@ -32,6 +41,9 @@ def get_rdio_comments(album_key):
     }
     oauth2_auth = OAuth2(client_id=settings.RDIO_OAUTH2_KEY,
                          token=oauth2_token)
+
+    reviews = defaultdict(list)
+    comment_by_key = {}
 
     start = 0
     count = 50
@@ -42,17 +54,15 @@ def get_rdio_comments(album_key):
         'object': album_key,
         'start': start,
         'count': count,
-        'extras': '-commentedItem,-commenter',
+        'extras': '-commenter',
     }
     source_item = None
 
-    storage = []
     while True:
         if 'result' in response:
             if source_item is None:
                 source_item = response['result']['commentedItem']
-            comments = map(lambda x: x['comment'], response['result']['comments'])
-            storage.extend(comments)
+            extract_comments(reviews, comment_by_key, response['result']['comments'])
 
         start += response_size
         payload['start'] = start
@@ -63,10 +73,10 @@ def get_rdio_comments(album_key):
         if response_size <= 0:
             break
 
-    return source_item, storage
+    return source_item, reviews, comment_by_key
 
 
-def start_request(session, comment_text):
+def start_request(session, comment_key, comment_text):
     """
     Returns a Future
     """
@@ -76,26 +86,37 @@ def start_request(session, comment_text):
         'outputMode': 'json',
     }
 
-    return session.get(url=url, params=payload)
+    return comment_key, session.get(url=url, params=payload)
 
 
-def count_sentiment(futures):
-    sentiment_counter = defaultdict(int)
-    for future in futures:
+def complete_requests(futures):
+    sentiment_by_comment_key = {}
+    for comment_key, future in futures:
         # This will block until it finishes
         api_result = future.result()
 
         payload = api_result.json()
         if payload['status'] == "OK":
             sentiment_type = payload['docSentiment']['type']
-            sentiment_counter[sentiment_type] += 1
-        else:
-            error_code = payload['statusInfo']
-            if error_code == 'unsupported-text-language':
-                # print 'Unsupported language:', payload['language']
-                pass
+            sentiment_by_comment_key[comment_key] = sentiment_type
 
-    return sentiment_counter
+    return sentiment_by_comment_key
+
+
+def aggregate_sentiment(reviews, sentiment_by_comment_key):
+    total_sentiment = defaultdict(int)
+    per_item_sentiment = defaultdict(lambda: defaultdict(int))
+
+    for item_key, comment_keys in reviews.iteritems():
+        for comment_key in comment_keys:
+            try:
+                sentiment_type = sentiment_by_comment_key[comment_key]
+            except KeyError:
+                continue
+            per_item_sentiment[item_key][sentiment_type] += 1
+            total_sentiment[sentiment_type] += 1
+
+    return total_sentiment, per_item_sentiment
 
 
 def home(request, album_key):
@@ -106,13 +127,17 @@ def home(request, album_key):
         session.auth = AlchemyApiAuth(settings.ALCHEMYAPI_KEY)
 
         futures = []
-        rdio_album, comments = get_rdio_comments(album_key)
-        for comment_text in comments:
-            futures.append(start_request(session, comment_text))
+        source_item, reviews, comment_by_key = get_rdio_comments(album_key)
+        for comment_key, comment_text in comment_by_key.iteritems():
+            futures.append(start_request(session, comment_key, comment_text))
+
+        sentiment_by_comment_key = complete_requests(futures)
+        total_sentiment, per_item_sentiment = aggregate_sentiment(reviews, sentiment_by_comment_key)
 
         response = {
-            'item': rdio_album,
-            'sentiment': count_sentiment(futures),
+            'item': source_item,
+            'total_sentiment': total_sentiment,
+            'per_item_sentiment': per_item_sentiment,
         }
 
         cache.set(album_key, response)
