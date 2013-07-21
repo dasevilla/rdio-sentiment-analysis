@@ -7,11 +7,20 @@ TrackSentimentCollection = Backbone.Collection.extend({
     model: TrackSentiment,
     comparator: function(trackSentiment) {
         postiveCount = trackSentiment.get('sentiment').positive;
+        neutrualCount = trackSentiment.get('sentiment').neutrual;
+        negativeCount = trackSentiment.get('sentiment').negative;
+
         if (_.isUndefined(postiveCount)) {
-            return 0;
-        } else {
-            return -postiveCount;
+            postiveCount = 0;
         }
+        if (_.isUndefined(neutrualCount)) {
+            neutrualCount = 0;
+        }
+        if (_.isUndefined(negativeCount)) {
+            negativeCount = 0;
+        }
+
+        return negativeCount - postiveCount
     }
 });
 
@@ -145,4 +154,6 @@ albumSentimentView = new AlbumSentimentView({
   model: albumSentimentModel
 });
 
-albumSentimentModel.fetch();
+R.ready(function() {
+    albumSentimentModel.fetch();
+});
