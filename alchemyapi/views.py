@@ -127,8 +127,8 @@ def home(request, album_key):
         session.auth = AlchemyApiAuth(settings.ALCHEMYAPI_KEY)
 
         futures = []
-        source_item, reviews, comment_by_key = get_rdio_comments(album_key)
-        for comment_key, comment_text in comment_by_key.iteritems():
+        source_item, reviews, comment_by_comment_key = get_rdio_comments(album_key)
+        for comment_key, comment_text in comment_by_comment_key.iteritems():
             futures.append(start_request(session, comment_key, comment_text))
 
         sentiment_by_comment_key = complete_requests(futures)
@@ -138,6 +138,8 @@ def home(request, album_key):
             'item': source_item,
             'total_sentiment': total_sentiment,
             'per_item_sentiment': per_item_sentiment,
+            'sentiment_by_comment_key': sentiment_by_comment_key,
+            'comment_by_comment_key': comment_by_comment_key,
         }
 
         response = json.dumps(response, indent=2)
