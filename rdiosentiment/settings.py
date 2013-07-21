@@ -97,9 +97,7 @@ ROOT_URLCONF = 'rdiosentiment.urls'
 WSGI_APPLICATION = 'rdiosentiment.wsgi.application'
 
 TEMPLATE_DIRS = (
-    # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
-    # Always use forward slashes, even on Windows.
-    # Don't forget to use absolute paths, not relative paths.
+    '%s/template' % os.path.abspath(os.path.split(__file__)[0])
 )
 
 INSTALLED_APPS = (
