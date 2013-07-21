@@ -19,7 +19,7 @@
         </div>
         <div class="span9">
           <h1><%= name %></h1>
-          <p>by <%= artist %></p>
+          <p><%= artist %></p>
           <div class="album-sentiment"></div>
         </div>
       </div>
@@ -28,14 +28,28 @@
       </div>
     </script>
 
+    <script type="text/template" id="track-sentiment-table">
+      <thead>
+        <tr>
+          <th>Track Key</th>
+          <th>Sentiment</th>
+        </tr>
+      </thead>
+      <tbody class="track-sentiment-table-body">
+      </tbody>
+    </script>
+
     <script type="text/template" id="track-sentiment-item">
-      <p><%= trackKey %>:
+      <td>
+        <%= trackKey %>
+      </td>
+      <td>
         <ul class="inline">
           <li><span class="badge badge-success"><%= sentiment.positive %></span></li>
           <li><span class="badge badge-warning"><%= sentiment.neutral %></span></li>
           <li><span class="badge badge-important"><%= sentiment.negative %></span></li>
         </ul>
-      </p>
+      </td>
     </script>
 
     <script type="text/template" id="sentiment-icons">
@@ -46,6 +60,7 @@
       </ul>
     </script>
 
+    <script src="//www.rdio.com/api/api.js?client_id=075xohxZqEVAU47gzPDQwA&amp;helper={% static 'helper.html' %}"></script>
     <script src="{% static 'js/json2.js' %}"></script>
     <script src="{% static 'js/jquery-2.0.3.min.js' %}"></script>
     <script src="{% static 'js/underscore-min.js' %}"></script>

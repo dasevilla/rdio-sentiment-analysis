@@ -84,7 +84,7 @@ AlbumSentimentView = Backbone.View.extend({
 });
 
 TrackSentimentItemView = Backbone.View.extend({
-    tagName: "li",
+    tagName: "tr",
 
     template: _.template($('#track-sentiment-item').html()),
 
@@ -95,7 +95,9 @@ TrackSentimentItemView = Backbone.View.extend({
 });
 
 TrackSentimentListView = Backbone.View.extend({
-    tagName: 'ul',
+    tagName: 'table',
+    className: 'table',
+    template: _.template($('#track-sentiment-table').html()),
 
     initialize: function() {
         var self = this;
@@ -109,8 +111,12 @@ TrackSentimentListView = Backbone.View.extend({
 
     render: function() {
         this.$el.empty();
+
+        this.$el.html(this.template(this.model.toJSON()));
+
+        tableBody = this.$el.find(".track-sentiment-table-body");
         _.each(this.model.models, function(trackSentiment) {
-            this.$el.append(new TrackSentimentItemView({
+            tableBody.append(new TrackSentimentItemView({
                 model: trackSentiment
             }).render().el);
         }, this);
