@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- Bootstrap -->
     <link href="{% static 'css/bootstrap.min.css' %}" rel="stylesheet" media="screen">
+    <link href="{% static 'css/m-player.css' %}" rel="stylesheet" media="screen">
   </head>
   <body>
     <div class="container" id="the-album">
@@ -15,13 +16,20 @@
     <script type="text/template" id="rdio-album">
       <div class="row">
         <div class="span3">
-          <img src="<%= icon %>" class="img-polaroid">
+          <% if (typeof(bigIcon) != "undefined") { %>
+            <img src="<%= bigIcon %>" class="img-polaroid">
+          <% } else { %>
+            <img src="<%= icon %>" class="img-polaroid">
+          <% } %>
         </div>
         <div class="span9">
           <h1><%= name %></h1>
           <p><%= artist %></p>
           <div class="album-sentiment"></div>
         </div>
+      </div>
+      <div class="row">
+        <div class="span12" id="rdio-player"></div>
       </div>
       <div class="row">
         <div class="span12" id="the-tracks"></div>
@@ -33,6 +41,7 @@
         <tr>
           <th>Track Key</th>
           <th>Sentiment</th>
+          <th>Player</th>
         </tr>
       </thead>
       <tbody class="track-sentiment-table-body">
@@ -50,6 +59,11 @@
           <li><span class="badge badge-important"><%= sentiment.negative %></span></li>
         </ul>
       </td>
+      <td>
+        <button type="button" class="rdio-play-btn btn">
+          <i class="icon-play"></i>
+        </button>
+      </td>
     </script>
 
     <script type="text/template" id="sentiment-icons">
@@ -66,6 +80,7 @@
     <script src="{% static 'js/underscore-min.js' %}"></script>
     <script src="{% static 'js/bootstrap.min.js' %}"></script>
     <script src="{% static 'js/backbone-min.js' %}"></script>
+    <script src="{% static 'js/m-player.js' %}"></script>
     <script src="{% static 'js/main.js' %}"></script>
   </body>
 </html>

@@ -1,4 +1,21 @@
-RdioAlbum = Backbone.Model.extend({});
+RdioAlbum = Backbone.Model.extend({
+    sync: function(method, model, options) {
+        var self = this;
+        R.request({
+          method: "get",
+          content: {
+            keys: this.get('key'),
+            extras: "tracks,bigIcon"
+          },
+          success: function(response) {
+            options.success(response.result[self.get('key')])
+          },
+          error: function(response) {
+            console.log("error: ", response.message);
+          }
+        });
+    }
+});
 
 TrackSentiment = Backbone.Model.extend({
 });
@@ -27,6 +44,7 @@ TrackSentimentCollection = Backbone.Collection.extend({
 AlbumSentiment = Backbone.Model.extend({
     initialize: function(props) {
         this.albumKey = props.albumKey;
+        this.album = new RdioAlbum;
         this.trackSentimentCollection = new TrackSentimentCollection;
     },
 
@@ -36,6 +54,7 @@ AlbumSentiment = Backbone.Model.extend({
 
     parse: function(response) {
         this.album = new RdioAlbum(response.item)
+        this.album.fetch();
         items = _.map(response.per_item_sentiment, function(sentiment, key) {
             return {
                 "trackKey": key,
@@ -69,8 +88,10 @@ AlbumSentimentView = Backbone.View.extend({
     initialize: function() {
         var self = this;
         this.model.bind("change", this.render, this);
+        this.model.album.bind("change", this.render, this);
         this.trackSentimentListView = new TrackSentimentListView({
-            model: this.model.trackSentimentCollection
+            model: this.model.trackSentimentCollection,
+            album: this.model.album
         });
     },
 
@@ -87,6 +108,7 @@ AlbumSentimentView = Backbone.View.extend({
         this.$el.append(renderedAlbumView.el);
 
         this.$el.find('#the-tracks').append(this.trackSentimentListView.render().el);
+        var player = new metronomik.player("rdio-player", R.player);
 
         return this;
     }
@@ -95,11 +117,21 @@ AlbumSentimentView = Backbone.View.extend({
 TrackSentimentItemView = Backbone.View.extend({
     tagName: "tr",
 
+    events: {
+        "click .rdio-play-btn": "playTrack"
+    },
+
     template: _.template($('#track-sentiment-item').html()),
 
     render: function() {
         this.$el.html(this.template(this.model.toJSON()));
         return this;
+    },
+
+    playTrack: function() {
+        R.player.play({
+            source: this.model.get('trackKey')
+        });
     }
 });
 
@@ -113,7 +145,7 @@ TrackSentimentListView = Backbone.View.extend({
         this.model.bind("reset", this.render, this);
         this.model.bind("add", function(trackSentiment) {
             self.$el.append(new TrackSentimentItemView({
-                model: trackSentiment
+                model: trackSentiment,
             }).render().el);
         })
     },
@@ -156,4 +188,5 @@ albumSentimentView = new AlbumSentimentView({
 
 R.ready(function() {
     albumSentimentModel.fetch();
+
 });
